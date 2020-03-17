@@ -1,4 +1,5 @@
 #include "IsotpWrapper.hpp"
+#include <iostream>
 #include <thread>
 
 Napi::FunctionReference IsotpWrapper::constructor;
@@ -9,7 +10,7 @@ Napi::Object IsotpWrapper::Init(Napi::Env env, Napi::Object exports) {
   Napi::Function func = DefineClass(env, "IsotpWrapper", {
     //InstanceMethod("connect", &IsotpWrapper::connect),
     InstanceMethod("send", &IsotpWrapper::send),
-    InstanceMethod("startReading", &IsotpWrapper::read)
+    InstanceMethod("read", &IsotpWrapper::read)
   });
 
   constructor = Napi::Persistent(func);
@@ -66,26 +67,61 @@ Napi::Value IsotpWrapper::send(const Napi::CallbackInfo& info) {
   return Napi::Number::New(info.Env(), bytes);
 }
 
-void IsotpWrapper::cont_read(Isotp *isotp, Napi::Function *emitter, Napi::Env *env) {
-  char buff[4096];
-
-  while(1) {
-    if(isotp->read(buff) > 0) {
-      emitter->Call({Napi::String::New(*env, "data"), Napi::String::New(*env, std::string(buff))});
-      memset(&buff[0], 0, sizeof(buff));
-    }
-    else {
-      perror("read");
-    }
-  }
-}
+std::thread nativeThread;
+  Napi::ThreadSafeFunction tsfn;
 
 Napi::Value IsotpWrapper::read(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  Napi::HandleScope scope(env);
 
-  reading = new std::thread(IsotpWrapper::cont_read, isotp_, &emitter_, &env);
+  if ( info.Length() < 2 )
+  {
+    throw Napi::TypeError::New( env, "Expected two arguments" );
+  }
+  else if ( !info[0].IsFunction() )
+  {
+    throw Napi::TypeError::New( env, "Expected first arg to be function" );
+  }
+  else if ( !info[1].IsNumber() )
+  {
+    throw Napi::TypeError::New( env, "Expected second arg to be number" );
+  }
 
-  this->emitter_.Call({Napi::String::New(env, "startedReading"), Napi::String::New(env, "lol")});
-  return Napi::String::New(info.Env(), "lol");
+  // Create a ThreadSafeFunction
+  tsfn = Napi::ThreadSafeFunction::New(
+      env,
+      info[0].As<Napi::Function>(),  // JavaScript function called asynchronously
+      "Resource Name",         // Name
+      0,                       // Unlimited queue
+      1,                       // Only one thread will use this initially
+      []( Napi::Env ) {        // Finalizer used to clean threads up
+        nativeThread.join();
+      } );
+
+  // Create a native thread
+  nativeThread = std::thread( [this] {
+    auto callback = []( Napi::Env env, Napi::Function jsCallback, char* value ) {
+      // Transform native data into JS data, passing it to the provided 
+      // `jsCallback` -- the TSFN's JavaScript function.
+      jsCallback.Call( {Napi::String::New( env, std::string(value) )} );
+    };
+
+    char buff[4096];
+    while (1)
+    {
+      if(this->isotp_->read(buff)>0){
+        napi_status status = tsfn.BlockingCall( buff, callback );
+        if ( status != napi_ok )
+        {
+          // Handle error
+          break;
+        }
+      }
+    }
+
+    // Release the thread-safe function
+    delete buff;
+    tsfn.Release();
+  } );
+
+  return Napi::Boolean::New(env, true);
 }

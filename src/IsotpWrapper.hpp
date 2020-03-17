@@ -11,11 +11,9 @@ class IsotpWrapper : public Napi::ObjectWrap<IsotpWrapper> {
   static Napi::FunctionReference constructor; //reference to store the class definition that needs to be exported to JS
   //Napi::Value connect(const Napi::CallbackInfo& info); //wrapped getValue function 
 
-  static void cont_read(Isotp *isotp, Napi::Function *emitter, Napi::Env *env);
   Napi::Value send(const Napi::CallbackInfo& info); //wrapped add function
   Napi::Value read(const Napi::CallbackInfo& info); //wrapped add function
 
   Isotp *isotp_; //internal instance of actualclass used to perform actual operations.
   Napi::Function emitter_;
-  std::thread *reading;
 };

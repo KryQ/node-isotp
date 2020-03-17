@@ -14,6 +14,10 @@ emitter.on('data', (evt) => {
   console.log(evt);
 })
 
-var test = new testAddon.IsotpWrapper("can0", 0x321, 0x123, emitter.emit.bind(emitter));
-console.log(test.startReading(2))
+var test = new testAddon.IsotpWrapper("can0", 0x123, 0x123, emitter.emit.bind(emitter));
 
+test.read(function (data) {
+  emitter.emit("data", data);
+}, 5);
+
+setInterval(() => test.send("lol"), 1000)
