@@ -15,8 +15,8 @@
 
 #define NO_CAN_ID 0xFFFFFFFFU
 
-Isotp::Isotp ( std::string can, uint32_t tx_id, uint32_t rx_id ) {
-  this->connect(can, tx_id, rx_id);
+Isotp::Isotp ( std::string can ) {
+  this->can_interface = can;
 }
 
 int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
@@ -40,38 +40,48 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
     return -1;
   }
 
-  return 0;
+  return this->socket_id;
 }
 
-int Isotp::send(const char* buf, uint32_t len) {
-  std::cout << buf << " len: " << len << std::endl;
-  
-  int retval = write(this->socket_id, buf, len);
+int Isotp::send(const char* buf, uint32_t len, uint32_t tx_id, uint32_t rx_id) {
+  int sock_id = this->connect(this->can_interface, tx_id, rx_id);
+  if(sock_id<0) {
+    perror("connect");
+    return -1;
+  }
+
+  int retval = write(sock_id, buf, len);
   if (retval < 0) {
+    close(sock_id);
     perror("send");
   }
+
+  close(sock_id);
   return retval;
 }
 
-int Isotp::read(char* buf) {
-  int ret = ::read(this->socket_id, buf, BUFSIZE);
-  if (ret < 0) {
+int Isotp::single_read(char* buf, uint32_t tx_id, uint32_t rx_id) {
+  int sock_id = this->connect(this->can_interface, tx_id, rx_id);
+  if(sock_id<0) {
+    perror("connect");
+    return -1;
+  }
+
+  int retval = ::read(sock_id, buf, BUFSIZE);
+  if (retval < 0) {
+    close(sock_id);
     perror("read");
   }
   
-  return ret;
+  close(sock_id);
+  return retval;
 }
 
-/*int main(void) {
-  char tx_test[100] = "test test test test test test test test test test";
-  char rx_test[100];
-  Isotp can0 = Isotp("can0", 0x321, 0x123);
-
-  std::cout << "Sended " << can0.send(tx_test, 49) << std::endl;
-
-  int readed = can0.read2(rx_test);
-
-  std::cout << "Readed " << readed << " bytes: " << rx_test << std::endl;
+int Isotp::read(char* buf, int sock_id) {
+  int retval = ::read(sock_id, buf, BUFSIZE);
+  if (retval < 0) {
+    perror("read");
+  }
+  
+  return retval;
 }
-
-*/
