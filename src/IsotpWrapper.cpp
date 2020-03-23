@@ -26,7 +26,7 @@ IsotpWrapper::IsotpWrapper(const Napi::CallbackInfo& info) : Napi::ObjectWrap<Is
   Napi::HandleScope scope(env);
 
   int length = info.Length();
-  if (length != 2) {
+  if (length != 1) {
     Napi::Error::New(env, "2 arguments expected").ThrowAsJavaScriptException();
   }
 
@@ -34,16 +34,9 @@ IsotpWrapper::IsotpWrapper(const Napi::CallbackInfo& info) : Napi::ObjectWrap<Is
     Napi::TypeError::New(env, "String expected").ThrowAsJavaScriptException();
   }
 
-  if (!info[1].IsFunction()) {
-    Napi::TypeError::New(env, "Function expected").ThrowAsJavaScriptException();
-  }
-
   Napi::String interface = info[0].As<Napi::String>();
   
   this->isotp_ = new Isotp(interface.Utf8Value());
-  this->emitter_ = info[1].As<Napi::Function>();
-
-  this->emitter_.Call({Napi::String::New(env, "created"), Napi::String::New(env, "created")});
 }
 
 Napi::Value IsotpWrapper::send(const Napi::CallbackInfo& info) {
@@ -103,20 +96,25 @@ Napi::Value IsotpWrapper::read(const Napi::CallbackInfo& info) {
 
   // Create a native thread
   reading_threads_map[thread_id] = std::thread( [this, thread_id, txId, rxId] {
-    auto callback = [txId, rxId]( Napi::Env env, Napi::Function jsCallback, char* value ) {
+    auto callback = [this, txId, rxId]( Napi::Env env, Napi::Function jsCallback, IsotpWrapper::Frame* frame ) {
       Napi::Object obj = Napi::Object::New(env);
-        obj.Set("data", std::string(value));
-        obj.Set("txId", txId);
-        obj.Set("rxId", rxId);
+      Napi::Buffer<char> test = Napi::Buffer<char>::New(env, frame->buff, frame->len);
+      obj.Set("data", test);
+      obj.Set("len", frame->len);
+      obj.Set("txId", txId);
+      obj.Set("rxId", rxId);
 
       jsCallback.Call( {obj} );
     };
 
-    char buff[4096];
+    IsotpWrapper::Frame frame;
+    int sock = this->isotp_->connect(txId, rxId);
+    
     while (1)
     {
-      if(this->isotp_->single_read(buff, txId, rxId) > 0) {
-        napi_status status = this->tsfn_map[thread_id].BlockingCall( buff, callback );
+      frame.len = this->isotp_->read(frame.buff, sock);
+      if(frame.len > 0) {
+        napi_status status = this->tsfn_map[thread_id].BlockingCall( &frame, callback );
         if ( status != napi_ok )
         {
           // Handle error
@@ -129,7 +127,7 @@ Napi::Value IsotpWrapper::read(const Napi::CallbackInfo& info) {
     }
 
     // Release the thread-safe function
-    delete buff;
+    //delete buff;
     this->tsfn_map[thread_id].Release();
   } );
 

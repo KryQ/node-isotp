@@ -13,10 +13,17 @@
 
 #include "Isotp.hpp"
 
+#include <sstream>
+#include <iomanip>
+
 #define NO_CAN_ID 0xFFFFFFFFU
 
 Isotp::Isotp ( std::string can ) {
   this->can_interface = can;
+}
+
+int Isotp::connect(uint32_t tx_id, uint32_t rx_id) {
+  return this->connect(this->can_interface, tx_id, rx_id);
 }
 
 int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
@@ -29,6 +36,11 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
     perror("socket");
     return -1;
   }
+
+  static struct can_isotp_fc_options fcopts;
+  fcopts.bs = 100;
+  fcopts.stmin = 5;
+  setsockopt(this->socket_id, SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, &fcopts, sizeof(fcopts));
 
   this->socket_addr.can_family = AF_CAN;
   this->socket_addr.can_ifindex = if_nametoindex(can.c_str());
@@ -67,21 +79,56 @@ int Isotp::single_read(char* buf, uint32_t tx_id, uint32_t rx_id) {
     return -1;
   }
 
-  int retval = ::read(sock_id, buf, BUFSIZE);
-  if (retval < 0) {
-    close(sock_id);
-    perror("read");
-  }
+  int retval = this->read(buf, sock_id);
   
   close(sock_id);
   return retval;
 }
 
 int Isotp::read(char* buf, int sock_id) {
+  //std::cout << "read" << std::endl;
   int retval = ::read(sock_id, buf, BUFSIZE);
   if (retval < 0) {
-    perror("read");
+    perror("Err: read");
   }
   
   return retval;
 }
+
+/*void toHex(
+    void *const data,           //!< Data to convert
+    const size_t dataLength,    //!< Length of the data to convert
+    std::string &dest           //!< Destination string
+    )
+{
+    unsigned char     *byteData = reinterpret_cast<unsigned char*>(data);
+    std::stringstream hexStringStream;
+    
+    hexStringStream << std::hex << std::setfill('0');
+    for(size_t index = 0; index < dataLength; ++index)
+        hexStringStream << std::setw(2) << static_cast<int>(byteData[index]);
+    dest = hexStringStream.str();
+}
+
+int main () {
+  Isotp can = Isotp("can0");
+  int sock = can.connect(0x321, 0x123);
+  char buff[16384];
+  
+  std::string resstring;
+
+  while(1) {
+    int res = can.read(buff, sock);
+    if(res>=0) {
+      
+      toHex(buff, res, resstring);
+      std::cout << resstring << " " << res << std::endl;
+    }
+    else {
+      perror("Err: ");
+    }
+  }
+
+  std::cout << "hello" << std::endl;
+  return 2;
+}*/

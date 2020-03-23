@@ -53,7 +53,8 @@
 			"streambuf": "cpp",
 			"thread": "cpp",
 			"typeinfo": "cpp",
-			"map": "cpp"
+			"map": "cpp",
+			"iomanip": "cpp"
 		}
 	}
 }

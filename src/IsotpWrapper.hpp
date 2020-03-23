@@ -21,4 +21,8 @@ class IsotpWrapper : public Napi::ObjectWrap<IsotpWrapper> {
 
   std::map<int, Napi::ThreadSafeFunction> tsfn_map;
   std::map<int, std::thread> reading_threads_map;
+  struct Frame {
+    char buff[8192];
+    int len;
+  };
 };
