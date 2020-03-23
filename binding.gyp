@@ -1,6 +1,6 @@
 {
     "targets": [{
-        "target_name": "node-isotp",
+        "target_name": "node_isotp",
         "cflags!": [ "-fno-exceptions" ],
         "cflags_cc!": [ "-fno-exceptions" ],
         "sources": [
