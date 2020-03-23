@@ -1,6 +1,6 @@
 {
     "targets": [{
-        "target_name": "canlistener",
+        "target_name": "node-isotp",
         "cflags!": [ "-fno-exceptions" ],
         "cflags_cc!": [ "-fno-exceptions" ],
         "sources": [
