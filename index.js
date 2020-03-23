@@ -1,3 +1,3 @@
-const isotp = require('./build/Release/canlistener.node');
+const isotp = require('./build/Release/node_isotp.node');
 
 exports.module = isotp
