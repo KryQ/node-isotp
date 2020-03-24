@@ -5,6 +5,7 @@
 class Isotp {
   public:
     Isotp ( std::string can );
+    std::string getInterface() {return this->can_interface;};
     int connect(uint32_t tx_id, uint32_t rx_id);
     int connect(std::string can, uint32_t tx_id, uint32_t rx_id);
     int send(const char* buf, uint32_t len, uint32_t tx_id, uint32_t rx_id);
