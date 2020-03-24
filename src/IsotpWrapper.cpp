@@ -85,6 +85,7 @@ public:
   // This code will be executed on the worker thread
   void Execute() override
   {
+    std::cout << "read sdd" << std::endl;
     int len = isotp->read(this->buff, sock);
     this->buff[len] = 0;
 
