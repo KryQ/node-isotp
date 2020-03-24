@@ -74,8 +74,8 @@ public:
   ReadWorker(Napi::Function &callback, Isotp *isotp, int &txId, int &rxId)
       : AsyncWorker(callback), isotp(isotp), txId(txId), rxId(rxId)
   {
-    int sock = isotp->connect(txId, rxId);
-    if (sock < 0)
+    this->sock = isotp->connect(txId, rxId);
+    if (this->sock < 0)
     {
       SetError("Socket creation error");
     }
@@ -86,7 +86,7 @@ public:
   void Execute() override
   {
     std::cout << "read sdd" << std::endl;
-    int len = isotp->read(this->buff, sock);
+    int len = isotp->read(this->buff, this->sock);
     this->buff[len] = 0;
 
     if (len < 0)
@@ -105,7 +105,7 @@ public:
 
 private:
   Isotp *isotp;
-  int txId, rxId;
+  int sock, txId, rxId;
   char buff[5000];
 };
 
