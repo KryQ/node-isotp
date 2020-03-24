@@ -72,22 +72,24 @@ class ReadWorker : public Napi::AsyncWorker
 {
 public:
   ReadWorker(Napi::Function &callback, Isotp *isotp, int &txId, int &rxId)
-      : AsyncWorker(callback), isotp(isotp), txId(txId), rxId(rxId) {}
+      : AsyncWorker(callback), isotp(isotp), txId(txId), rxId(rxId)
+  {
+    int sock = isotp->connect(txId, rxId);
+    if (sock < 0)
+    {
+      SetError("Socket creation error");
+    }
+  }
 
   ~ReadWorker() {}
   // This code will be executed on the worker thread
   void Execute() override
   {
-    int sock = isotp->connect(txId, rxId);
-
-    if(sock<0) {
-      SetError("Socket creation error");
-    }
-
     int len = isotp->read(this->buff, sock);
     this->buff[len] = 0;
 
-    if (len < 0) {
+    if (len < 0)
+    {
       SetError("Read error");
     }
   }
@@ -96,7 +98,7 @@ public:
   {
     Napi::HandleScope scope(Env());
     SuppressDestruct();
-    Callback().Call({Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId) });
+    Callback().Call({Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId)});
     Queue();
   }
 
