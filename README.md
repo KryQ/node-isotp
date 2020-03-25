@@ -5,8 +5,11 @@ As this is my learning repo i woudn't recommend it for production use.
 
 Library is a wrapper around isotp-can module.
 
+to import it:
+const { IsotpWrapper } = require('./index');
+
 Constructor
-isotp.IsotpWrapper(CAN_INTERFACE)
+const isotp = new IsotpWrapper(CAN_INTERFACE)
 
 send
 isotp.send((string)data, tx_id, rx_id)
