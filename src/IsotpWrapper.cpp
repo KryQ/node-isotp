@@ -11,7 +11,9 @@ Napi::Object IsotpWrapper::Init(Napi::Env env, Napi::Object exports)
 
   Napi::Function func = DefineClass(env, "IsotpWrapper", {
                                                              //InstanceMethod("connect", &IsotpWrapper::connect),
-                                                             InstanceMethod("send", &IsotpWrapper::send), InstanceMethod("read", &IsotpWrapper::read),
+                                                             InstanceMethod("send", &IsotpWrapper::send), 
+                                                             InstanceMethod("read", &IsotpWrapper::read),
+                                                             InstanceMethod("stopReading", &IsotpWrapper::stopReading),
                                                              //InstanceMethod("single_read", &IsotpWrapper::single_read)
                                                          });
 
@@ -75,6 +77,8 @@ public:
   ReadWorker(Napi::Function &callback, Isotp *isotp, int &txId, int &rxId)
       : AsyncWorker(callback), isotp(isotp), txId(txId), rxId(rxId)
   {
+    SuppressDestruct();
+
     this->sock = isotp->connect(txId, rxId);
     if (this->sock < 0)
     {
@@ -95,18 +99,27 @@ public:
     }
   }
 
+  void Kill() {
+    this->kill = true;
+  }
+
   void OnOK() override
   {
     Napi::HandleScope scope(Env());
-    SuppressDestruct();
     Callback().Call({Napi::Boolean::New(Env(), false), Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId)});
-    Queue();
+    
+    if(!this->kill) Queue();
+    else {
+      this->isotp->disconnect(this->sock);
+      Destroy();
+    }
   }
 
 private:
   Isotp *isotp;
   int sock, txId, rxId;
   char buff[5000];
+  bool kill = false;
 };
 
 Napi::Value IsotpWrapper::read(const Napi::CallbackInfo &info)
@@ -138,6 +151,29 @@ Napi::Value IsotpWrapper::read(const Napi::CallbackInfo &info)
   ReadWorker *wk = new ReadWorker(cb, this->isotp_, txId, rxId);
   wk->Queue();
 
+  int read_id = std::rand();
+  read_workers.insert ( std::pair<int, ReadWorker*>(read_id, wk));
 
-  return Napi::Number::New(env, 2);
+  return Napi::Number::New(env, read_id);
+}
+
+Napi::Value IsotpWrapper::stopReading(const Napi::CallbackInfo &info)
+{
+  Napi::Env env = info.Env();
+
+  if (info.Length() < 1)
+  {
+    throw Napi::RangeError::New(env, "Expected one argument");
+  }
+  else if (!info[0].IsNumber())
+  {
+    throw Napi::TypeError::New(env, "Number expected");
+  }
+
+  int read_id = info[0].As<Napi::Number>().Uint32Value();
+
+  read_workers[read_id]->Kill();
+  read_workers.erase (read_id);
+
+  return Napi::Number::New(env, 1);
 }

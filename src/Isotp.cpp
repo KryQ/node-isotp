@@ -38,7 +38,7 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
 
   static struct can_isotp_fc_options fcopts;
   fcopts.bs = 100;
-  fcopts.stmin = 5;
+  fcopts.stmin = 2;
   setsockopt(this->socket_id, SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, &fcopts, sizeof(fcopts));
 
   this->socket_addr.can_family = AF_CAN;
@@ -50,6 +50,10 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
   }
 
   return this->socket_id;
+}
+
+void Isotp::disconnect(int sock_id) {
+  close(socket_id);
 }
 
 int Isotp::send(const char* buf, uint32_t len, uint32_t tx_id, uint32_t rx_id) {
@@ -77,9 +81,7 @@ int Isotp::single_read(char* buf, uint32_t tx_id, uint32_t rx_id) {
 }
 
 int Isotp::read(char* buf, int sock_id) {
-  int retval = ::read(sock_id, buf, BUFSIZE);
-  
-  return retval;
+  return ::read(sock_id, buf, BUFSIZE);
 }
 
 /*void toHex(
