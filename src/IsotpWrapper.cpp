@@ -106,9 +106,11 @@ public:
   void OnOK() override
   {
     Napi::HandleScope scope(Env());
-    Callback().Call({Napi::Boolean::New(Env(), false), Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId)});
     
-    if(!this->kill) Queue();
+    if(!this->kill) {
+      Callback().Call({Napi::Boolean::New(Env(), false), Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId)});
+      Queue();
+    }
     else {
       this->isotp->disconnect(this->sock);
       Destroy();
