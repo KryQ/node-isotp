@@ -1,6 +1,7 @@
 #include "IsotpWrapper.hpp"
 #include <iostream>
 #include <thread>
+#include <errno.h>
 
 Napi::FunctionReference IsotpWrapper::constructor;
 
@@ -77,7 +78,7 @@ public:
     this->sock = isotp->connect(txId, rxId);
     if (this->sock < 0)
     {
-      SetError("Socket creation error");
+      SetError(strerror(errno));
     }
   }
 
@@ -85,13 +86,12 @@ public:
   // This code will be executed on the worker thread
   void Execute() override
   {
-    std::cout << "read sdd" << std::endl;
     int len = isotp->read(this->buff, this->sock);
     this->buff[len] = 0;
 
     if (len < 0)
     {
-      SetError("Read error");
+      SetError(strerror(errno));
     }
   }
 
@@ -99,7 +99,7 @@ public:
   {
     Napi::HandleScope scope(Env());
     SuppressDestruct();
-    Callback().Call({Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId)});
+    Callback().Call({Napi::Boolean::New(Env(), false), Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId)});
     Queue();
   }
 
@@ -135,10 +135,9 @@ Napi::Value IsotpWrapper::read(const Napi::CallbackInfo &info)
     throw Napi::TypeError::New(env, "rxId can't be same as txTd");
   }
 
-  std::cout << "Test " << this->isotp_->getInterface() << std::endl;
-
   ReadWorker *wk = new ReadWorker(cb, this->isotp_, txId, rxId);
   wk->Queue();
+
 
   return Napi::Number::New(env, 2);
 }

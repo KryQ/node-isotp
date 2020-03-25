@@ -33,7 +33,6 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
   this->socket_addr.can_addr.tp.rx_id = rx_id;
 
   if ((this->socket_id = socket(PF_CAN, SOCK_DGRAM, CAN_ISOTP)) < 0) {
-    perror("socket");
     return -1;
   }
 
@@ -46,8 +45,6 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
   this->socket_addr.can_ifindex = if_nametoindex(can.c_str());
 
   if (bind(this->socket_id, (struct sockaddr *)&this->socket_addr, sizeof(this->socket_addr)) < 0) {
-    
-    perror("bind");
     close(this->socket_id);
     return -1;
   }
@@ -58,15 +55,10 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
 int Isotp::send(const char* buf, uint32_t len, uint32_t tx_id, uint32_t rx_id) {
   int sock_id = this->connect(this->can_interface, tx_id, rx_id);
   if(sock_id<0) {
-    perror("connect");
     return -1;
   }
 
   int retval = write(sock_id, buf, len);
-  if (retval < 0) {
-    close(sock_id);
-    perror("send");
-  }
 
   close(sock_id);
   return retval;
@@ -75,7 +67,6 @@ int Isotp::send(const char* buf, uint32_t len, uint32_t tx_id, uint32_t rx_id) {
 int Isotp::single_read(char* buf, uint32_t tx_id, uint32_t rx_id) {
   int sock_id = this->connect(this->can_interface, tx_id, rx_id);
   if(sock_id<0) {
-    perror("connect");
     return -1;
   }
 
@@ -86,11 +77,7 @@ int Isotp::single_read(char* buf, uint32_t tx_id, uint32_t rx_id) {
 }
 
 int Isotp::read(char* buf, int sock_id) {
-  //std::cout << "read" << std::endl;
   int retval = ::read(sock_id, buf, BUFSIZE);
-  if (retval < 0) {
-    perror("Err: read");
-  }
   
   return retval;
 }
