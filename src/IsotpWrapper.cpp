@@ -108,6 +108,7 @@ public:
 
   void Kill() {
     this->kill = true;
+    this->isotp->disconnect(this->sock);
   }
 
   void OnOK() override
@@ -121,7 +122,7 @@ public:
     }
     else {
       std::cout << "killing lst" << std::endl;
-      this->isotp->disconnect(this->sock);
+      
       Destroy();
     }
   }
@@ -156,12 +157,13 @@ Napi::Value IsotpWrapper::read(const Napi::CallbackInfo &info)
 
   if (txId == rxId)
   {
-    throw Napi::TypeError::New(env, "rxId can't be same as txTd");
+    throw Napi::TypeError::New(env, "rxId can't be same as txId");
   }
 
   ReadWorker *wk = new ReadWorker(cb, this->isotp_, txId, rxId);
   wk->Queue();
 
+  std::srand(std::time(nullptr));
   int read_id = std::rand();
   read_workers.insert ( std::pair<int, ReadWorker*>(read_id, wk));
 
