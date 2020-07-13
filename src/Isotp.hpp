@@ -17,6 +17,7 @@ class Isotp {
     const static uint16_t BUFSIZE = 5000;
 
     std::string can_interface;
+    uint16_t bs=0, stmin=0;
     int socket_id;
     struct sockaddr_can socket_addr;
 };
