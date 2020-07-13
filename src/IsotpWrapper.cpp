@@ -115,10 +115,12 @@ public:
     Napi::HandleScope scope(Env());
     
     if(!this->kill) {
+      std::cout << "Extending Listener" << std::endl;
       Callback().Call({Napi::Boolean::New(Env(), false), Napi::String::New(Env(), std::string(this->buff)), Napi::Number::New(Env(), txId), Napi::Number::New(Env(), rxId)});
       Queue();
     }
     else {
+      std::cout << "killing lst" << std::endl;
       this->isotp->disconnect(this->sock);
       Destroy();
     }
@@ -181,8 +183,8 @@ Napi::Value IsotpWrapper::stopReading(const Napi::CallbackInfo &info)
 
   int read_id = info[0].As<Napi::Number>().Uint32Value();
 
-  read_workers[read_id]->Kill();
-  read_workers.erase (read_id);
+  this->read_workers[read_id]->Kill();
+  this->read_workers.erase (read_id);
 
   return Napi::Number::New(env, 1);
 }

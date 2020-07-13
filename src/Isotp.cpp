@@ -30,44 +30,55 @@ int Isotp::connect(uint32_t tx_id, uint32_t rx_id) {
 }
 
 int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
+  //std::cout << "[DEBUG] Connecting to socket: " << can << std::endl;
+  int sock_id = -1;
   this->socket_addr.can_addr.tp.tx_id = this->socket_addr.can_addr.tp.rx_id = NO_CAN_ID;
+  struct ifreq ifr;
 
   this->socket_addr.can_addr.tp.tx_id = tx_id;
   this->socket_addr.can_addr.tp.rx_id = rx_id;
 
-  if ((this->socket_id = socket(PF_CAN, SOCK_DGRAM, CAN_ISOTP)) < 0) {
+  if ((sock_id = socket(PF_CAN, SOCK_DGRAM, CAN_ISOTP)) < 0) {
+    perror("clol :(");
     return -1;
   }
 
-  static struct can_isotp_fc_options fcopts;
+  can_isotp_fc_options fcopts;
   fcopts.bs = this->bs;
   fcopts.stmin = this->stmin;
-  setsockopt(this->socket_id, SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, &fcopts, sizeof(fcopts));
+  setsockopt(sock_id, SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, &fcopts, sizeof(fcopts));
+
+  strcpy(ifr.ifr_name, can.c_str());
+	ioctl(sock_id, SIOCGIFINDEX, &ifr);
 
   this->socket_addr.can_family = AF_CAN;
-  this->socket_addr.can_ifindex = if_nametoindex(can.c_str());
+  this->socket_addr.can_ifindex = ifr.ifr_ifindex;
 
-  if (bind(this->socket_id, (struct sockaddr *)&this->socket_addr, sizeof(this->socket_addr)) < 0) {
-    close(this->socket_id);
+  //std::cout << can.c_str() << " at index " << ifr.ifr_ifindex << "\n";
+
+  if (bind(sock_id, (struct sockaddr *)&this->socket_addr, sizeof(this->socket_addr)) < 0) {
+    this->disconnect(sock_id);
     return -1;
   }
 
-  return this->socket_id;
+  return sock_id;
 }
 
 void Isotp::disconnect(int sock_id) {
-  close(socket_id);
+  //std::cout << "Disconnecting socket" << std::endl;
+  close(sock_id);
 }
 
 int Isotp::send(const char* buf, uint32_t len, uint32_t tx_id, uint32_t rx_id) {
   int sock_id = this->connect(this->can_interface, tx_id, rx_id);
   if(sock_id<0) {
+    perror("cslol :(");
     return -1;
   }
 
   int retval = write(sock_id, buf, len);
 
-  close(sock_id);
+  this->disconnect(sock_id);
   return retval;
 }
 
@@ -103,13 +114,15 @@ int Isotp::read(char* buf, int sock_id) {
 }
 
 int main () {
-  Isotp can = Isotp("can0");
-  int sock = can.connect(0x321, 0x123);
+  Isotp can = Isotp("vcan0", 0, 0);
+  //int sock = can.connect(0x321, 0x123);
   char buff[16384];
   
   std::string resstring;
 
-  while(1) {
+  can.send("lol\0", 3, 0x1, 0x2);
+
+  /*while(1) {
     int res = can.read(buff, sock);
     if(res>=0) {
       
@@ -123,4 +136,5 @@ int main () {
 
   std::cout << "hello" << std::endl;
   return 2;
-}*/
+}
+*/
