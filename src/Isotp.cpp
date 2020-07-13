@@ -38,7 +38,7 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
 
   static struct can_isotp_fc_options fcopts;
   fcopts.bs = 100;
-  fcopts.stmin = 2;
+  fcopts.stmin = 50;
   setsockopt(this->socket_id, SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, &fcopts, sizeof(fcopts));
 
   this->socket_addr.can_family = AF_CAN;

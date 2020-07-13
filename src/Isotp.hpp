@@ -14,7 +14,7 @@ class Isotp {
     int read(char* buf, int sock_id);
 
   private:
-    const static uint16_t BUFSIZE = 8192;
+    const static uint16_t BUFSIZE = 5000;
 
     std::string can_interface;
     int socket_id;
