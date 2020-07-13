@@ -26,7 +26,7 @@ Isotp::Isotp ( std::string can, uint16_t bs, uint16_t stmin ) {
 }
 
 int Isotp::connect(uint32_t tx_id, uint32_t rx_id) {
-  return this->connect(this->can_interface, tx_id, rx_id;
+  return this->connect(this->can_interface, tx_id, rx_id);
 }
 
 int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
