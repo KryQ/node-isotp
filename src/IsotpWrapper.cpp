@@ -30,9 +30,9 @@ IsotpWrapper::IsotpWrapper(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Is
   Napi::HandleScope scope(env);
 
   int length = info.Length();
-  if (length != 1)
+  if (length != 3)
   {
-    Napi::Error::New(env, "2 arguments expected").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "3 arguments expected").ThrowAsJavaScriptException();
   }
 
   if (!info[0].IsString())
@@ -40,9 +40,16 @@ IsotpWrapper::IsotpWrapper(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Is
     Napi::TypeError::New(env, "String expected").ThrowAsJavaScriptException();
   }
 
-  Napi::String interface = info[0].As<Napi::String>();
+  if (!info[1].IsNumber() || !info[2].IsNumber())
+  {
+    Napi::TypeError::New(env, "Number expected").ThrowAsJavaScriptException();
+  }
 
-  this->isotp_ = new Isotp(interface.Utf8Value());
+  Napi::String interface = info[0].As<Napi::String>();
+  Napi::Number bs = info[1].As<Napi::Number>();
+  Napi::Number stmin = info[2].As<Napi::Number>();
+
+  this->isotp_ = new Isotp(interface.Utf8Value(), bs.Uint32Value(), stmin.Uint32Value() );
 }
 
 Napi::Value IsotpWrapper::send(const Napi::CallbackInfo &info)
@@ -57,7 +64,7 @@ Napi::Value IsotpWrapper::send(const Napi::CallbackInfo &info)
 
   if (!info[1].IsNumber() || !info[2].IsNumber())
   {
-    Napi::TypeError::New(env, "Numbero expected").ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "Number expected").ThrowAsJavaScriptException();
   }
 
   Napi::String tx = info[0].As<Napi::String>();

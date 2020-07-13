@@ -4,7 +4,7 @@
 
 class Isotp {
   public:
-    Isotp ( std::string can );
+    Isotp ( std::string can, uint16_t bs, uint16_t stmin );
     std::string getInterface() {return this->can_interface;};
     int connect(uint32_t tx_id, uint32_t rx_id);
     int connect(std::string can, uint32_t tx_id, uint32_t rx_id);

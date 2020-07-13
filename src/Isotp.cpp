@@ -18,12 +18,15 @@
 
 #define NO_CAN_ID 0xFFFFFFFFU
 
-Isotp::Isotp ( std::string can ) {
+Isotp::Isotp ( std::string can, uint16_t bs, uint16_t stmin ) {
   this->can_interface = can;
+
+  this->bs = bs;
+  this->stmin = stmin;
 }
 
 int Isotp::connect(uint32_t tx_id, uint32_t rx_id) {
-  return this->connect(this->can_interface, tx_id, rx_id);
+  return this->connect(this->can_interface, tx_id, rx_id;
 }
 
 int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
@@ -37,8 +40,8 @@ int Isotp::connect(std::string can, uint32_t tx_id, uint32_t rx_id) {
   }
 
   static struct can_isotp_fc_options fcopts;
-  fcopts.bs = 10;
-  fcopts.stmin = 0xf6;
+  fcopts.bs = this->bs;
+  fcopts.stmin = this->stmin;
   setsockopt(this->socket_id, SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, &fcopts, sizeof(fcopts));
 
   this->socket_addr.can_family = AF_CAN;
