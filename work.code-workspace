@@ -54,7 +54,9 @@
 			"thread": "cpp",
 			"typeinfo": "cpp",
 			"map": "cpp",
-			"iomanip": "cpp"
+			"iomanip": "cpp",
+			"bit": "cpp",
+			"cstring": "cpp"
 		}
 	}
 }

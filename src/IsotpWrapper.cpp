@@ -107,8 +107,8 @@ public:
   }
 
   void Kill() {
+    std::cout << "started kill process" << std::endl;
     this->kill = true;
-    this->isotp->disconnect(this->sock);
   }
 
   void OnOK() override
@@ -122,7 +122,7 @@ public:
     }
     else {
       std::cout << "killing lst" << std::endl;
-      
+      this->isotp->disconnect(this->sock);
       Destroy();
     }
   }
